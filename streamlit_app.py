@@ -238,7 +238,7 @@ with bar[0]:
         '<div class="ib-topbar">'
         '<div class="ib-logo">IB</div>'
         '<div><div class="ib-brand-title">InBody Assistant</div>'
-        '<div class="ib-brand-sub">Grounded in ' + str(kb.document_count) + ' InBody documents</div></div>'
+        '<div class="ib-brand-sub">Grounded in ' + str(kb.document_count) + ' InBody documents &middot; ' + model + '</div></div>'
         '</div>',
         unsafe_allow_html=True,
     )
