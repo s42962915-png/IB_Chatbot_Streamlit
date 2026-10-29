@@ -32,7 +32,17 @@ REFUSAL = (
 THEME = """<style>
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap');
 
-#MainMenu, [data-testid="stHeader"], [data-testid="stToolbar"], footer { display: none !important; }
+header, #MainMenu, footer,
+[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stToolbarActions"],
+[data-testid="stDecoration"], [data-testid="stStatusWidget"], [data-testid="stFooter"],
+[data-testid="stMainMenu"], [data-testid="stManageAppButton"], [data-testid="stDeployButton"],
+[data-testid="stAppDeployButton"], [data-testid="stProfileAvatar"], [data-testid="stSidebarCollapsedControl"],
+.stDeployButton, .stAppDeployButton {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+}
 
 html, body, .stApp, [data-testid="stAppViewContainer"] {
     font-family: 'Lato', 'Source Sans Pro', sans-serif !important;
