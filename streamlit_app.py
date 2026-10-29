@@ -9,6 +9,36 @@ st.set_page_config(
     layout="centered",
 )
 
+# --- InBody branding & theme -------------------------------------------------
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap');
+    html, body, [class*="css"], .stApp { font-family: 'Lato', 'Source Sans Pro', sans-serif !important; }
+    .stApp { background-color: #F7FAFE; }
+    [data-testid="stHeader"] { background: linear-gradient(90deg, #0057B8 0%, #003D82 100%); }
+    .stButton > button { background-color: #0057B8; color: #ffffff; border: none; border-radius: 8px; font-weight: 700; }
+    .stButton > button:hover { background-color: #003D82; color: #ffffff; border: none; }
+    [data-testid="stSidebar"] { background-color: #EEF4FC; }
+    [data-testid="stChatMessage"] { border-radius: 14px; }
+    h1, h2, h3 { color: #003D82 !important; }
+    #inbody-footer { margin-top: 28px; padding-top: 12px; border-top: 2px solid #0057B8; text-align: center; color: #5b6b7c; font-size: 12px; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <div style="background:linear-gradient(90deg,#0057B8 0%,#003D82 100%);color:#ffffff;padding:18px 24px;border-radius:14px;margin-bottom:14px;">
+      <div style="font-size:12px;letter-spacing:2px;font-weight:700;opacity:.9;">INBODY</div>
+      <div style="font-size:26px;font-weight:900;line-height:1.2;">Knowledge Assistant</div>
+      <div style="font-size:13px;opacity:.85;margin-top:4px;">Answers grounded in the approved InBody documents &middot; no web search</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 SYSTEM_PROMPT = (
     "You are the InBody Knowledge Assistant.\n"
     "Answer ONLY from the document excerpts provided in the CONTEXT section.\n"
@@ -57,8 +87,7 @@ model = get_secret("GROQ_MODEL", "qwen/qwen3.8-27b")
 kb_dir = get_secret("KB_DIR", "knowledge_base")
 top_k = int(get_secret("TOP_K", "6"))
 
-st.title("\U0001F4D8 InBody Knowledge Assistant")
-st.caption("Answers are grounded in the approved InBody documents. No web search.")
+# Header is rendered by the InBody banner above.
 
 kb = load_kb(kb_dir)
 if kb.chunk_count == 0:
@@ -140,3 +169,10 @@ if question:
             st.session_state.messages.append(
                 {"role": "assistant", "content": answer, "evidence": evidence}
             )
+
+st.markdown(
+    """
+    <div id="inbody-footer">Created by <strong style="color:#003D82;">Sakshi Mhatre</strong>, Sr Dietitian &mdash; for internal usage only.</div>
+    """,
+    unsafe_allow_html=True,
+)
