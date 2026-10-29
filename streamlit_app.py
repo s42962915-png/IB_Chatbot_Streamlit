@@ -59,14 +59,33 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
 .ib-brand-title { font-size: 15px; font-weight: 900; color: #ffffff; line-height: 1.15; }
 .ib-brand-sub { font-size: 11.5px; color: #b3909a; }
 
-.ib-hero { margin: 24px 0 6px 0; }
+.ib-hero { margin: 18px 0 2px 0; }
 .ib-hero h1 { font-size: 44px; font-weight: 900; color: #ffffff; margin: 0 0 10px 0; letter-spacing: -1px; line-height: 1.05; }
 .ib-hero p { font-size: 15px; color: #caa9b2; line-height: 1.55; max-width: 600px; }
 
 .ib-cards-note { font-size: 11px; color: #8f6f78; margin: 14px 0 4px 0; }
 
+[data-testid="stForm"] { border: none !important; padding: 0 !important; background: transparent !important; }
+[data-testid="stTextInput"] input {
+    background: rgba(20,4,9,0.92) !important;
+    color: #f3e7ea !important;
+    border: 1px solid rgba(140,50,66,0.55) !important;
+    border-radius: 14px !important;
+    padding: 14px 16px !important;
+    font-size: 14px !important;
+}
+[data-testid="stTextInput"] input::placeholder { color: #9a7c85 !important; }
+[data-testid="stFormSubmitButton"] > button {
+    width: 46px !important; height: 46px !important; min-height: 46px !important;
+    border-radius: 50% !important;
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(200,90,110,0.7) !important;
+    color: #e0566f !important; font-size: 18px !important; font-weight: 900 !important;
+}
+[data-testid="stFormSubmitButton"] > button:hover { background: rgba(200,90,110,0.25) !important; color: #ffffff !important; }
+
 div[data-testid="stButton"] > button {
-    width: 100%;
+    width: 100% !important;
     text-align: left !important;
     justify-content: flex-start !important;
     white-space: normal !important;
@@ -89,8 +108,8 @@ div[data-testid="stButton"] > button[kind="secondary"] {
     background: rgba(255,255,255,0.06) !important;
     border: 1px solid rgba(255,255,255,0.18) !important;
     color: #f3e7ea !important;
-    min-height: unset !important;
-    font-weight: 700 !important;
+    min-height: unset !important; height: auto !important;
+    font-weight: 700 !important; font-size: 12px !important; text-align: center !important; justify-content: center !important;
 }
 
 [data-testid="stChatInput"] textarea {
@@ -145,6 +164,9 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 pending = st.session_state.pop("pending_question", None)
+if pending:
+    st.session_state.messages.append({"role": "user", "content": pending})
+    st.rerun()
 
 bar = st.columns([8, 2])
 with bar[0]:
@@ -161,7 +183,14 @@ with bar[1]:
         st.session_state.messages = []
         st.rerun()
 
-if not st.session_state.messages and not pending:
+if not api_key:
+    st.error("Add your Groq API key to Streamlit Secrets (GROQ_API_KEY) to start answering.")
+    st.markdown('<div id="inbody-footer">Created by <strong style="color:#c56b7d;">Sakshi Mhatre</strong>, Sr Dietitian - for internal usage only.</div>', unsafe_allow_html=True)
+    st.stop()
+
+client = Groq(api_key=api_key)
+
+if not st.session_state.messages:
     st.markdown(
         '<div class="ib-hero">'
         '<h1>How can I help?</h1>'
@@ -171,6 +200,16 @@ if not st.session_state.messages and not pending:
         '</div>',
         unsafe_allow_html=True,
     )
+    with st.form("ask_form", clear_on_submit=True):
+        c1, c2 = st.columns([9, 1])
+        with c1:
+            q = st.text_input("ask", placeholder="Ask anything about InBody...", label_visibility="collapsed")
+        with c2:
+            submitted = st.form_submit_button("→")
+    if submitted and q.strip():
+        st.session_state.messages.append({"role": "user", "content": q.strip()})
+        st.rerun()
+
     cards = [
         ("COMPARE", "Compare InBody 270 and InBody 570"),
         ("PARAMETERS", "How is visceral fat area calculated?"),
@@ -178,43 +217,36 @@ if not st.session_state.messages and not pending:
         ("PREPARATION", "How should a client prepare for a test?"),
     ]
     cols = st.columns(2, gap="small")
-    for i, (cat, q) in enumerate(cards):
+    for i, (cat, qtext) in enumerate(cards):
         with cols[i % 2]:
-            if st.button(cat + "  -  " + q, key="card_" + str(i)):
-                st.session_state.pending_question = q
+            if st.button(cat + "  -  " + qtext, key="card_" + str(i)):
+                st.session_state.pending_question = qtext
                 st.rerun()
     st.markdown(
         '<div class="ib-cards-note">Answers come only from InBody documents and can still be wrong. Check critical specs.</div>',
         unsafe_allow_html=True,
     )
+else:
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+            if msg.get("evidence"):
+                with st.expander("Sources"):
+                    for e in msg["evidence"]:
+                        st.markdown("**" + e["filename"] + "**")
+                        st.caption(e["snippet"])
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-        if msg.get("evidence"):
-            with st.expander("Sources"):
-                for e in msg["evidence"]:
-                    st.markdown("**" + e["filename"] + "**")
-                    st.caption(e["snippet"])
+    typed = st.chat_input("Ask anything about InBody...")
+    if typed:
+        st.session_state.messages.append({"role": "user", "content": typed})
+        st.rerun()
 
-if not api_key:
-    st.error("Add your Groq API key to Streamlit Secrets (GROQ_API_KEY) to start answering.")
-    st.markdown('<div id="inbody-footer">Created by <strong style="color:#c56b7d;">Sakshi Mhatre</strong>, Sr Dietitian - for internal usage only.</div>', unsafe_allow_html=True)
-    st.stop()
-
-client = Groq(api_key=api_key)
-
-typed = st.chat_input("Ask anything about InBody...")
-prompt = typed or pending
-
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+    last_q = st.session_state.messages[-1]["content"]
     with st.chat_message("assistant"):
         with st.spinner("Searching the approved InBody documents..."):
-            passages = kb.search(prompt, top_k=top_k)
-            p_text = build_prompt(prompt, passages)
+            passages = kb.search(last_q, top_k=top_k)
+            p_text = build_prompt(last_q, passages)
             evidence = [{"filename": p[0], "snippet": p[1][:260]} for p in passages]
             try:
                 resp = client.chat.completions.create(
@@ -236,9 +268,9 @@ if prompt:
                     for e in evidence:
                         st.markdown("**" + e["filename"] + "**")
                         st.caption(e["snippet"])
-            st.session_state.messages.append(
-                {"role": "assistant", "content": answer, "evidence": evidence}
-            )
+    st.session_state.messages.append(
+        {"role": "assistant", "content": answer, "evidence": evidence}
+    )
 
 st.markdown(
     '<div id="inbody-footer">Created by <strong style="color:#c56b7d;">Sakshi Mhatre</strong>, Sr Dietitian - for internal usage only.</div>',
