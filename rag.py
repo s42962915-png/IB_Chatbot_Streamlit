@@ -20,20 +20,26 @@ SUPPORTED = {".pdf", ".docx", ".pptx", ".xlsx", ".txt", ".md"}
 
 def _tokenize(text: str) -> list[str]:
     text = text.lower()
+    # original tokens (keep "270s", "inbody270" intact)
+    orig = re.findall(r"[a-z0-9]+", text)
     # split letter<->digit boundaries so "InBody270" and "InBody 270" match
-    text = re.sub(r"([a-z])(\d)", r"\1 \2", text)
-    text = re.sub(r"(\d)([a-z])", r"\1 \2", text)
-    tokens = re.findall(r"[a-z0-9]+", text)
-    # light normalization: strip common plural suffixes
+    split = re.sub(r"([a-z])(\d)", r"\1 \2", text)
+    split = re.sub(r"(\d)([a-z])", r"\1 \2", split)
+    tokens = orig + re.findall(r"[a-z0-9]+", split)
+    # light normalization: strip plural suffixes only from pure-word tokens
     out = []
+    seen = set()
     for t in tokens:
-        if len(t) > 4 and t.endswith("ies"):
-            t = t[:-3] + "y"
-        elif len(t) > 3 and t.endswith("es"):
-            t = t[:-2]
-        elif len(t) > 3 and t.endswith("s") and not t.endswith("ss"):
-            t = t[:-1]
-        out.append(t)
+        if t.isalpha():
+            if len(t) > 4 and t.endswith("ies"):
+                t = t[:-3] + "y"
+            elif len(t) > 3 and t.endswith("es"):
+                t = t[:-2]
+            elif len(t) > 3 and t.endswith("s") and not t.endswith("ss"):
+                t = t[:-1]
+        if t not in seen:
+            seen.add(t)
+            out.append(t)
     return out
 
 
