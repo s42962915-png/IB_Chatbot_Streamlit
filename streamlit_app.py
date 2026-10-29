@@ -63,7 +63,6 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
 .ib-hero h1 { font-size: 44px; font-weight: 900; color: #ffffff; margin: 0 0 10px 0; letter-spacing: -1px; line-height: 1.05; }
 .ib-hero p { font-size: 15px; color: #caa9b2; line-height: 1.55; max-width: 600px; }
 
-.ib-cards-note { font-size: 11px; color: #8f6f78; margin: 14px 0 4px 0; }
 
 [data-testid="stForm"] { border: none !important; padding: 0 !important; background: transparent !important; }
 [data-testid="stTextInput"] input {
@@ -222,10 +221,6 @@ if not st.session_state.messages:
             if st.button(cat + "  -  " + qtext, key="card_" + str(i)):
                 st.session_state.pending_question = qtext
                 st.rerun()
-    st.markdown(
-        '<div class="ib-cards-note">Answers come only from InBody documents and can still be wrong. Check critical specs.</div>',
-        unsafe_allow_html=True,
-    )
 else:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
