@@ -19,8 +19,8 @@ A **standalone Streamlit** chatbot that answers questions **only** from the appr
 ### 1. Clone & install
 
 ```bash
-git clone <this-repo>
-cd <this-repo>
+git clone https://github.com/s42962915-png/IB_Chatbot_Streamlit.git
+cd IB_Chatbot_Streamlit
 python -m venv .venv
 ```
 
@@ -72,9 +72,9 @@ Question
 
 ## Deploy to Streamlit Community Cloud (free)
 
-1. Push this project to a GitHub repository.
+1. Push this project to a GitHub repository (this repo is already private: `IB_Chatbot_Streamlit`).
 2. Go to https://share.streamlit.io and sign in with GitHub.
-3. **New app** -> select the repository -> set the main file to `streamlit_app.py`.
+3. **New app** -> select `IB_Chatbot_Streamlit` -> main file `streamlit_app.py`.
 4. In **Advanced settings -> Secrets**, paste:
 
 ```toml
