@@ -147,11 +147,18 @@ div[data-testid="stButton"] > button[kind="secondary"] {
 
 
 def get_secret(name, default=None):
+    val = None
     try:
-        return st.secrets.get(name, default)
+        val = st.secrets.get(name)
     except Exception:
-        pass
-    return os.environ.get(name, default)
+        val = None
+    if val is None:
+        val = os.environ.get(name)
+    if val is None:
+        val = default
+    if isinstance(val, str):
+        val = val.strip()
+    return val
 
 
 @st.cache_resource(show_spinner=False)
