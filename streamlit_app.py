@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 import streamlit.components.v1 as components
 from groq import Groq
@@ -146,7 +148,8 @@ def get_secret(name, default=None):
     try:
         return st.secrets.get(name, default)
     except Exception:
-        return default
+        pass
+    return os.environ.get(name, default)
 
 
 @st.cache_resource(show_spinner=False)
