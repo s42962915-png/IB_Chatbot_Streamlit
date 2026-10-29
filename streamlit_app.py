@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from groq import Groq
 
 from rag import KnowledgeBase
@@ -166,6 +167,48 @@ kb_dir = get_secret("KB_DIR", "knowledge_base")
 top_k = int(get_secret("TOP_K", "6"))
 
 st.markdown(THEME, unsafe_allow_html=True)
+
+_HIDE_JS = """<script>
+(function () {
+  function hideStreamlitBranding() {
+    try {
+      var doc = window.parent.document;
+      var sel = [
+        '[data-testid="stManageAppButton"]',
+        '[data-testid="stFooter"]',
+        '[data-testid="stAppDeployButton"]',
+        '[data-testid="stStatusWidget"]',
+        '[data-testid="stToolbarActions"]',
+        '[class*="ManageApp"]',
+        '[class*="stFooter"]',
+        '[class*="appFooter"]',
+        '[class*="streamlitBranding"]'
+      ];
+      for (var i = 0; i < sel.length; i++) {
+        var els = doc.querySelectorAll(sel[i]);
+        for (var j = 0; j < els.length; j++) { els[j].style.display = 'none'; }
+      }
+      var all = doc.querySelectorAll('a, button, div, span, footer');
+      for (var k = 0; k < all.length; k++) {
+        var t = (all[k].textContent || '').trim();
+        if (t === 'Streamlit' || t.indexOf('Made with Streamlit') === 0 || t === 'Manage app') {
+          all[k].style.display = 'none';
+        }
+      }
+      var links = doc.querySelectorAll('a[href*="streamlit.io"]');
+      for (var m = 0; m < links.length; m++) { links[m].style.display = 'none'; }
+    } catch (e) {}
+  }
+  hideStreamlitBranding();
+  setInterval(hideStreamlitBranding, 1500);
+  try {
+    var mo = new MutationObserver(hideStreamlitBranding);
+    mo.observe(window.parent.document.body, { childList: true, subtree: true });
+  } catch (e) {}
+})();
+</script>"""
+
+components.html(_HIDE_JS, height=0)
 
 kb = load_kb(kb_dir)
 
