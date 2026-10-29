@@ -246,3 +246,52 @@ class KnowledgeBase:
             if len(results) >= top_k:
                 break
         return results
+
+    def search_context(self, query: str, top_k: int = 8, doc_limit: int = 2, char_budget: int = 18000) -> list[tuple[str, str]]:
+        """Like search(), but also pulls in ALL passages from the most relevant
+        documents so the model sees every detail of the source material."""
+        if not self._bm25:
+            return []
+        tokens = _tokenize(query)
+        if not tokens:
+            return []
+        scores = self._bm25.get_scores(tokens)
+        for i, (fname, _) in enumerate(self.chunks):
+            fname_l = fname.lower()
+            for tok in tokens:
+                if len(tok) >= 3 and tok in fname_l:
+                    scores[i] += 4.0
+
+        doc_best = {}
+        for i, (fname, _) in enumerate(self.chunks):
+            if fname not in doc_best or scores[i] > doc_best[fname]:
+                doc_best[fname] = scores[i]
+        top_docs = [d for d, s in sorted(doc_best.items(), key=lambda kv: kv[1], reverse=True) if s > 0][:doc_limit]
+
+        order = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+        picks = []
+        seen = set()
+        for i in order:
+            if scores[i] <= 0:
+                break
+            if i in seen:
+                continue
+            picks.append(i)
+            seen.add(i)
+            if len(picks) >= top_k:
+                break
+        for i, (fname, _) in enumerate(self.chunks):
+            if fname in top_docs and i not in seen:
+                picks.append(i)
+                seen.add(i)
+
+        picks.sort(key=lambda i: scores[i], reverse=True)
+        results = []
+        total = 0
+        for i in picks:
+            chunk = self.chunks[i][1]
+            if results and total + len(chunk) > char_budget:
+                continue
+            results.append(self.chunks[i])
+            total += len(chunk)
+        return results

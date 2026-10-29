@@ -306,9 +306,14 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
     last_q = st.session_state.messages[-1]["content"]
     with st.chat_message("assistant"):
         with st.spinner("Searching the approved InBody documents..."):
-            passages = kb.search(last_q, top_k=top_k)
+            passages = kb.search_context(last_q, top_k=top_k)
             p_text = build_prompt(last_q, passages)
-            evidence = [{"filename": p[0], "snippet": p[1][:260]} for p in passages]
+            evidence = []
+            seen_files = set()
+            for p in passages:
+                if p[0] not in seen_files:
+                    seen_files.add(p[0])
+                    evidence.append({"filename": p[0], "snippet": p[1][:260]})
             try:
                 resp = client.chat.completions.create(
                     model=model,
@@ -317,7 +322,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                         {"role": "user", "content": p_text},
                     ],
                     temperature=0.1,
-                    max_tokens=1500,
+                    max_tokens=2500,
                 )
                 answer = (resp.choices[0].message.content or "").strip() or REFUSAL
             except Exception as exc:
