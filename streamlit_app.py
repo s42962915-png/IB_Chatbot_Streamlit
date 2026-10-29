@@ -1,5 +1,7 @@
 import os
 
+import certifi
+import httpx
 import streamlit as st
 import streamlit.components.v1 as components
 from groq import Groq
@@ -243,7 +245,8 @@ if not api_key:
     st.markdown('<div id="inbody-footer">Created by <strong style="color:#c56b7d;">Sakshi Mhatre</strong>, Sr Dietitian - for internal usage only.</div>', unsafe_allow_html=True)
     st.stop()
 
-client = Groq(api_key=api_key, max_retries=3, timeout=90.0)
+_http_client = httpx.Client(verify=certifi.where())
+client = Groq(api_key=api_key, http_client=_http_client, max_retries=3, timeout=90.0)
 
 if not st.session_state.messages:
     st.markdown(
