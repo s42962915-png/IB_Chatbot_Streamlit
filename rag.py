@@ -262,6 +262,17 @@ class KnowledgeBase:
                 if len(tok) >= 3 and tok in fname_l:
                     scores[i] += 4.0
 
+        # If the question names a model (e.g. "270S", "970"), always include the
+        # full document whose filename contains that model number.
+        model_tokens = [t for t in tokens if any(c.isdigit() for c in t) and len(t) >= 3]
+        forced_docs = set()
+        for fname, _ in self.chunks:
+            fname_l = fname.lower()
+            for mt in model_tokens:
+                if mt in fname_l:
+                    forced_docs.add(fname)
+                    break
+
         doc_best = {}
         for i, (fname, _) in enumerate(self.chunks):
             if fname not in doc_best or scores[i] > doc_best[fname]:
@@ -281,7 +292,7 @@ class KnowledgeBase:
             if len(picks) >= top_k:
                 break
         for i, (fname, _) in enumerate(self.chunks):
-            if fname in top_docs and i not in seen:
+            if (fname in top_docs or fname in forced_docs) and i not in seen:
                 picks.append(i)
                 seen.add(i)
 

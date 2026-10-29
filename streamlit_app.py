@@ -4,7 +4,6 @@ import certifi
 import httpx
 import streamlit as st
 import streamlit.components.v1 as components
-from groq import Groq
 
 from rag import KnowledgeBase
 
@@ -173,8 +172,50 @@ def build_prompt(question: str, passages) -> str:
     return "CONTEXT (excerpts from approved InBody documents):\n" + "\n\n".join(blocks) + "\n\nQUESTION:\n" + question
 
 
-api_key = get_secret("GROQ_API_KEY")
-model = get_secret("GROQ_MODEL", "openai/gpt-oss-120b")
+def generate_answer(provider, ai_key, model, system, prompt, max_tokens=2500):
+    if provider == "gemini":
+        url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent"
+        body = {
+            "systemInstruction": {"parts": [{"text": system}]},
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 6000, "thinkingConfig": {"thinkingBudget": 0}},
+        }
+        r = httpx.post(url, params={"key": ai_key}, json=body, timeout=120, verify=certifi.where())
+        r.raise_for_status()
+        data = r.json()
+        cands = data.get("candidates") or []
+        if not cands:
+            return REFUSAL
+        parts = cands[0].get("content", {}).get("parts", []) or []
+        text = "".join(p.get("text", "") for p in parts).strip()
+        return text or REFUSAL
+
+    from groq import Groq
+
+    _hc = httpx.Client(verify=certifi.where(), trust_env=False)
+    client = Groq(api_key=ai_key, http_client=_hc, max_retries=3, timeout=90.0)
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.1,
+        max_tokens=max_tokens,
+    )
+    return (resp.choices[0].message.content or "").strip() or REFUSAL
+
+
+_gemini = get_secret("GEMINI_API_KEY")
+_groq = get_secret("GROQ_API_KEY")
+if _gemini:
+    _provider = "gemini"
+    api_key = _gemini
+    model = get_secret("GEMINI_MODEL", "gemini-3.6-flash")
+else:
+    _provider = "groq"
+    api_key = _groq
+    model = get_secret("GROQ_MODEL", "openai/gpt-oss-120b")
 kb_dir = get_secret("KB_DIR", "knowledge_base")
 top_k = int(get_secret("TOP_K", "8"))
 
@@ -248,12 +289,11 @@ with bar[1]:
         st.rerun()
 
 if not api_key:
-    st.error("Add your Groq API key to Streamlit Secrets (GROQ_API_KEY) to start answering.")
+    st.error("Add your API key to Streamlit Secrets: GEMINI_API_KEY (or GROQ_API_KEY).")
     st.markdown('<div id="inbody-footer">Created by <strong style="color:#c56b7d;">Sakshi Mhatre</strong>, Sr Dietitian - for internal usage only.</div>', unsafe_allow_html=True)
     st.stop()
 
-_http_client = httpx.Client(verify=certifi.where(), trust_env=False)
-client = Groq(api_key=api_key, http_client=_http_client, max_retries=3, timeout=90.0)
+# AI client is created per call inside generate_answer()
 
 if not st.session_state.messages:
     st.markdown(
@@ -306,7 +346,10 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
     last_q = st.session_state.messages[-1]["content"]
     with st.chat_message("assistant"):
         with st.spinner("Searching the approved InBody documents..."):
-            passages = kb.search_context(last_q, top_k=top_k)
+            if _provider == "gemini":
+                passages = kb.search_context(last_q, top_k=top_k, doc_limit=4, char_budget=150000)
+            else:
+                passages = kb.search_context(last_q, top_k=top_k)
             p_text = build_prompt(last_q, passages)
             evidence = []
             seen_files = set()
@@ -315,16 +358,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                     seen_files.add(p[0])
                     evidence.append({"filename": p[0], "snippet": p[1][:260]})
             try:
-                resp = client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": p_text},
-                    ],
-                    temperature=0.1,
-                    max_tokens=2500,
-                )
-                answer = (resp.choices[0].message.content or "").strip() or REFUSAL
+                answer = generate_answer(_provider, api_key, model, SYSTEM_PROMPT, p_text, max_tokens=2500)
             except Exception as exc:
                 import traceback
                 traceback.print_exc()
