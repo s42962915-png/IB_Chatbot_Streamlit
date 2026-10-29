@@ -245,7 +245,7 @@ if not api_key:
     st.markdown('<div id="inbody-footer">Created by <strong style="color:#c56b7d;">Sakshi Mhatre</strong>, Sr Dietitian - for internal usage only.</div>', unsafe_allow_html=True)
     st.stop()
 
-_http_client = httpx.Client(verify=certifi.where())
+_http_client = httpx.Client(verify=certifi.where(), trust_env=False)
 client = Groq(api_key=api_key, http_client=_http_client, max_retries=3, timeout=90.0)
 
 if not st.session_state.messages:
@@ -317,7 +317,17 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                 import traceback
                 traceback.print_exc()
                 answer = "The request failed. Please try again."
-                st.caption("Technical detail: " + type(exc).__name__ + ": " + str(exc))
+                chain = []
+                e = exc
+                depth = 0
+                while e is not None and depth < 6:
+                    chain.append(type(e).__name__ + ": " + str(e))
+                    nxt = getattr(e, "__cause__", None) or getattr(e, "__context__", None)
+                    if nxt is e:
+                        break
+                    e = nxt
+                    depth += 1
+                st.caption("Technical detail: " + "  <-  ".join(chain))
             st.markdown(answer)
             if evidence:
                 with st.expander("Sources"):
