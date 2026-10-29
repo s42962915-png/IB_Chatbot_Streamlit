@@ -10,6 +10,7 @@ excerpts, never the open web.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -176,11 +177,29 @@ def chunk_text(text: str, max_chars: int = 1400, overlap: int = 200) -> list[str
 # --- knowledge base --------------------------------------------------------
 
 class KnowledgeBase:
-    def __init__(self, kb_dir: str | Path):
+    def __init__(self, kb_dir: str | Path, rebuild: bool = False):
         self.kb_dir = Path(kb_dir)
         self.chunks: list[tuple[str, str]] = []  # (filename, chunk)
         self._bm25: BM25Plus | None = None
-        self._build()
+        self._cache_path = Path(__file__).parent / "kb_index.json"
+        if not rebuild and self._cache_path.exists():
+            self._load_cache()
+        else:
+            self._build()
+        if self.chunks:
+            self._bm25 = BM25Plus([_tokenize(c[1]) for c in self.chunks])
+
+    def _load_cache(self) -> None:
+        data = json.loads(self._cache_path.read_text(encoding="utf-8"))
+        self.chunks = [(d.get("f", ""), d.get("c", "")) for d in data]
+
+    def save_cache(self) -> None:
+        payload = [{"f": f, "c": c} for f, c in self.chunks]
+        self._cache_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    def reset_cache(self) -> None:
+        if self._cache_path.exists():
+            self._cache_path.unlink()
 
     def _build(self) -> None:
         for path in sorted(self.kb_dir.rglob("*")):
@@ -194,8 +213,6 @@ class KnowledgeBase:
             text = extract_text(path)
             for chunk in chunk_text(text):
                 self.chunks.append((path.name, chunk))
-        if self.chunks:
-            self._bm25 = BM25Plus([_tokenize(c[1]) for c in self.chunks])
 
     @property
     def document_count(self) -> int:
