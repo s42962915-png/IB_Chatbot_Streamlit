@@ -243,7 +243,7 @@ if not api_key:
     st.markdown('<div id="inbody-footer">Created by <strong style="color:#c56b7d;">Sakshi Mhatre</strong>, Sr Dietitian - for internal usage only.</div>', unsafe_allow_html=True)
     st.stop()
 
-client = Groq(api_key=api_key)
+client = Groq(api_key=api_key, max_retries=3, timeout=90.0)
 
 if not st.session_state.messages:
     st.markdown(
@@ -311,8 +311,10 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                 )
                 answer = (resp.choices[0].message.content or "").strip() or REFUSAL
             except Exception as exc:
-                answer = "The request failed. Check your Groq API key and model name."
-                st.caption("Technical detail: " + str(exc))
+                import traceback
+                traceback.print_exc()
+                answer = "The request failed. Please try again."
+                st.caption("Technical detail: " + type(exc).__name__ + ": " + str(exc))
             st.markdown(answer)
             if evidence:
                 with st.expander("Sources"):
