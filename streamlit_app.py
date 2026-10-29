@@ -174,9 +174,9 @@ def build_prompt(question: str, passages) -> str:
 
 
 api_key = get_secret("GROQ_API_KEY")
-model = get_secret("GROQ_MODEL", "qwen/qwen3.8-27b")
+model = get_secret("GROQ_MODEL", "openai/gpt-oss-120b")
 kb_dir = get_secret("KB_DIR", "knowledge_base")
-top_k = int(get_secret("TOP_K", "6"))
+top_k = int(get_secret("TOP_K", "8"))
 
 st.markdown(THEME, unsafe_allow_html=True)
 
@@ -317,7 +317,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                         {"role": "user", "content": p_text},
                     ],
                     temperature=0.1,
-                    max_tokens=1024,
+                    max_tokens=1500,
                 )
                 answer = (resp.choices[0].message.content or "").strip() or REFUSAL
             except Exception as exc:

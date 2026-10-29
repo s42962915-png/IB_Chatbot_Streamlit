@@ -42,7 +42,7 @@ Create `.streamlit/secrets.toml`:
 
 ```toml
 GROQ_API_KEY = "gsk_your_key_here"
-GROQ_MODEL = "qwen/qwen3.8-27b"
+GROQ_MODEL = "openai/gpt-oss-120b"
 ```
 
 ### 4. Run
@@ -79,7 +79,7 @@ Question
 
 ```toml
 GROQ_API_KEY = "gsk_your_key_here"
-GROQ_MODEL = "qwen/qwen3.8-27b"
+GROQ_MODEL = "openai/gpt-oss-120b"
 ```
 
 5. **Deploy**. You get a public URL like `https://your-app.streamlit.app`.
@@ -93,7 +93,7 @@ GROQ_MODEL = "qwen/qwen3.8-27b"
 | Secret | Default | Description |
 | --- | --- | --- |
 | `GROQ_API_KEY` | - | **Required.** Free key from Groq. |
-| `GROQ_MODEL` | `qwen/qwen3.8-27b` | Groq model. Alternatives: `openai/gpt-oss-20b`, `openai/gpt-oss-120b`. |
+| `GROQ_MODEL` | `openai/gpt-oss-120b` | Groq model. Alternatives: `openai/gpt-oss-20b`, `qwen/qwen3.8-27b`. |
 | `KB_DIR` | `knowledge_base` | Folder with your documents. |
 | `TOP_K` | `6` | Number of passages to retrieve per question. |
 

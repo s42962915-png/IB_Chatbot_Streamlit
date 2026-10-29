@@ -229,6 +229,14 @@ class KnowledgeBase:
         if not tokens:
             return []
         scores = self._bm25.get_scores(tokens)
+        # Boost passages whose FILENAME matches a model name in the query
+        # (e.g. "Compare 270 vs 270S" should prioritise the 270/270S catalogues,
+        #  not documents that merely mention "270 kg").
+        for i, (fname, _) in enumerate(self.chunks):
+            fname_l = fname.lower()
+            for tok in tokens:
+                if len(tok) >= 3 and tok in fname_l:
+                    scores[i] += 4.0
         order = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
         results = []
         for i in order:
